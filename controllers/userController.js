@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
 // Create a new user
 exports.createUser = async (req, res) => {
@@ -14,10 +16,19 @@ exports.createUser = async (req, res) => {
       location,
     } = req.body;
 
-    // Create a new user document
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists" });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create a new user document with the hashed password
     const newUser = new User({
       email,
-      password,
+      password: hashedPassword,
       fullName,
       profilePicture,
       activityType,
@@ -31,11 +42,11 @@ exports.createUser = async (req, res) => {
       .status(201)
       .json({ message: "User created successfully", user: newUser });
   } catch (error) {
-    res.status(500).josn({ error: "Failed to create user" });
+    res.status(500).json({ error: "Failed to create user" });
   }
 };
 
-// Get all users
+// Get all users - Admin Only Access (You may want to add a role check here)
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
@@ -45,10 +56,17 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// Get a single user by ID
+// Get a single user by ID - Only allow access to the user's own profile
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const userId = req.params.id;
+
+    // Ensure the user can only access their own profile
+    if (req.user.id !== userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -58,13 +76,18 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-// Update user by ID
+// Update user by ID - Only allow the user to update their own profile
 exports.updateUser = async (req, res) => {
   try {
+    const userId = req.params.id;
+
+    // Ensure the user can only update their own profile
+    if (req.user.id !== userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
     const updates = req.body;
-    const user = await User.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-    });
+    const user = await User.findByIdAndUpdate(userId, updates, { new: true });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -74,10 +97,17 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// Delete user by ID
+// Delete user by ID - Only allow the user to delete their own profile
 exports.deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const userId = req.params.id;
+
+    // Ensure the user can only delete their own profile
+    if (req.user.id !== userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const user = await User.findByIdAndDelete(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
