@@ -1,6 +1,8 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
+const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 // Load environment variables
 dotenv.config();
@@ -14,10 +16,9 @@ const app = express();
 // Middleware to parse JSON requests
 app.use(express.json());
 
-// Test route
-app.get("/", (req, res) => {
-  res.send("SyncMove backend is running!");
-});
+// Routes
+app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5001;
