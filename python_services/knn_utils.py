@@ -26,21 +26,27 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * c  # Return distance in kilometers
 
 
-def get_user_features(db):
+def get_user_features(db, include_ai=False):
     """
-    Fetch user feature data from MongoDB for KNN processing.
+    Fetch user feature data from MongoDB for KNN processing, with an option to include AI users.
 
     Parameters:
     - db: MongoDB database connection object.
+    - include_ai: Boolean flag to include AI users in the query results.
 
     Returns:
     - feature_matrix: NumPy array of user feature vectors for matching.
     - user_ids: List of user IDs corresponding to each feature vector.
     """
     users_collection = db["users"]
-    user_data = list(users_collection.find({}, {"_id": 1, "features": 1}))
+    # Define query based on whether AI users should be included
+    query = {} if include_ai else {"isAIUser": False}
+
+    # Retrieve user data with specified query
+    user_data = list(users_collection.find(query, {"_id": 1, "features": 1}))
     feature_matrix = np.array([user["features"] for user in user_data])
     user_ids = [str(user["_id"]) for user in user_data]
+
     return feature_matrix, user_ids
 
 
