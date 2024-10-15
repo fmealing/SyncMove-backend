@@ -9,6 +9,9 @@ const authRoutes = require("./routes/authRoutes");
 const matchRoutes = require("./routes/matchRoutes");
 const authenticateToken = require("./middleware/authMiddleware");
 const Message = require("./models/Message");
+const activityRoutes = require("./routes/activityRoutes");
+const messageRoutes = require("./routes/messageRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 // Load environment variables
 dotenv.config();
@@ -31,7 +34,10 @@ app.use(express.json());
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/activities", activityRoutes);
 app.use("/api/match", matchRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Socket.IO configuration for real-time messaging
 io.use((socket, next) => {
