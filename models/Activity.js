@@ -27,8 +27,20 @@ const ActivitySchema = new mongoose.Schema(
         ref: "User",
       },
     ],
-    date: { type: Date, required: true },
-    createdAt: { type: Date, default: Date.now },
+    dateString: {
+      type: String,
+      required: true,
+      match: /^\d{2}\/\d{2}\/\d{4}$/, // Ensures DD/MM/YYYY format
+    },
+    timeOfDay: {
+      type: String,
+      enum: ["Morning", "Afternoon", "Evening"],
+      required: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );

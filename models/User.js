@@ -60,9 +60,43 @@ const UserSchema = new mongoose.Schema(
         default: ["morning"],
       },
     },
+    privacyPreferences: {
+      visibility: {
+        type: String,
+        enum: ["public", "friends", "private"],
+        default: "public", // Controls overall profile visibility
+      },
+      shareLocation: {
+        type: Boolean,
+        default: true, // Controls whether location is shared
+      },
+      shareActivity: {
+        type: Boolean,
+        default: true, // Controls whether activity is shared
+      },
+    },
+    notificationPreferences: {
+      notifications: {
+        type: Boolean,
+        default: true, // Enables or disables notifications
+      },
+      messages: {
+        type: Boolean,
+        default: true, // Controls whether message notifications are enabled
+      },
+      activityReminders: {
+        type: Boolean,
+        default: true, // Controls whether activity reminders are enabled
+      },
+      notificationType: {
+        type: String,
+        enum: ["email", "push"],
+        default: "email", // Preferred notification method
+      },
+    },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
-); // Timestamps will automatically manage createdAt and updatedAt
+);
 
 module.exports = mongoose.model("User", UserSchema);
