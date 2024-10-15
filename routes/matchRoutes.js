@@ -1,15 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const axios = require("axios");
+// const matchController = require("../controllers/matchController");
+const authenticateToken = require("../middleware/authMiddleware");
 
-router.post("/", async (req, res) => {
-  try {
-    const userFeatures = req.body.features;
-    const response = await axios.post("http://localhost:5001/match", {
-      features: userFeatures,
-    });
-    res.status(200).json(response.data);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch matches" });
-  }
-});
+// Match Routes
+// router.post("/", authenticateToken, matchController.createMatch); // Create new match
+// router.get("/", authenticateToken, matchController.getUserMatches); // Get all matches
+// router.get("/:id", authenticateToken, matchController.getMatchById); // Get specific match
+// router.put("/:id", authenticateToken, matchController.updateMatchStatus); // Update match
+
+module.exports = router;
