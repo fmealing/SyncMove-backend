@@ -39,13 +39,56 @@ def get_user_features(db, include_ai=False):
     - user_ids: List of user IDs corresponding to each feature vector.
     """
     users_collection = db["users"]
-    # Define query based on whether AI users should be included
-    query = {} if include_ai else {"isAIUser": False}
 
-    # Retrieve user data with specified query
-    user_data = list(users_collection.find(query, {"_id": 1, "features": 1}))
-    feature_matrix = np.array([user["features"] for user in user_data])
+    # Define the query to filter out AI users if needed
+    query = {} if include_ai else {"isAIUser": False}
+    print("Query to MongoDB:", query)
+
+    # Fetch user data
+    user_data = list(
+        users_collection.find(
+            query,
+            {
+                "_id": 1,
+                "features": 1,
+                "location.coordinates": 1,
+                "activityType": 1,
+                "fitnessGoals": 1,
+            },
+        )
+    )
+    print("Fetched user data (full):", user_data)
+
+    # Map categorical fields to numerical values
+    activity_map = {"running": 1, "cycling": 2, "weightlifting": 3, "other": 4}
+    goals_map = {
+        "weight loss": 1,
+        "endurance": 2,
+        "muscle gain": 3,
+        "general fitness": 4,
+    }
+
+    # Prepare feature matrix using activity type, fitness goals, experience level, and coordinates
+    feature_matrix = []
+    for user in user_data:
+        activity_type = activity_map.get(user["activityType"], 0)
+        fitness_goal = goals_map.get(user["fitnessGoals"], 0)
+        experience_level = user.get("experienceLevel", 0)
+        coordinates = user["location"]["coordinates"]
+
+        print(f"User Activity Type: {user['activityType']}, Mapped: {activity_type}")
+        print(f"User Fitness Goal: {user['fitnessGoals']}, Mapped: {fitness_goal}")
+
+        # Construct the feature vector for each user
+        feature_vector = [activity_type, fitness_goal, experience_level] + coordinates
+        feature_matrix.append(feature_vector)
+
+    # Convert to a NumPy array for compatibility
+    feature_matrix = np.array(feature_matrix)
+    print("Feature matrix shape:", feature_matrix.shape)
+    print("Feature matrix:", feature_matrix)
     user_ids = [str(user["_id"]) for user in user_data]
+    print("User IDs:", user_ids)
 
     return feature_matrix, user_ids
 
@@ -62,6 +105,11 @@ def calculate_preference_similarity(user_preferences, other_preferences, weights
     Returns:
     - Normalized similarity score (0 to 1) representing preference similarity.
     """
+    print(f"User Preferences in calculate_preference_similarity: {user_preferences}")
+    print(
+        f"Other User Preferences in calculate_preference_similarity: {other_preferences}"
+    )
+
     if weights is None:
         weights = {"activityType": 0.4, "fitnessGoals": 0.3, "experienceLevel": 0.3}
 
