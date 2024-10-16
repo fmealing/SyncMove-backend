@@ -56,45 +56,58 @@ exports.getUserMatches = async (req, res) => {
   }
 };
 
-// Get a specific match by ID
+// Get a specific match by matchId
 exports.getMatchById = async (req, res) => {
-  const { id } = req.params;
+  const { matchId } = req.params;
+  // console.log("Received matchId:", matchId);
 
   try {
-    const match = await Match.findById(id).populate(
+    // Attempt to find the match by matchId
+    const match = await Match.findById(matchId).populate(
       "user1 user2",
       "fullName profilePicture"
     );
+    // console.log("Fetched match:", match);
 
-    if (
-      !match ||
-      (match.user1.toString() !== req.user.id &&
-        match.user2.toString() !== req.user.id)
-    ) {
-      return res
-        .status(404)
-        .json({ message: "Match not found or access denied" });
+    // Check if the match exists and if the authenticated user is either user1 or user2
+    if (!match) {
+      // console.log("Match not found");
+      return res.status(404).json({ message: "Match not found" });
     }
 
+    if (
+      match.user1._id.toString() !== req.user.id &&
+      match.user2._id.toString() !== req.user.id
+    ) {
+      // console.log("Access denied for user:", req.user.id);
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // If all checks pass, return the match data
     res.status(200).json(match);
   } catch (error) {
+    // console.error("Error occurred while retrieving match:", error);
     res.status(500).json({ message: "Failed to retrieve match", error });
   }
 };
 
 // Update match status
 exports.updateMatchStatus = async (req, res) => {
-  const { id } = req.params;
+  const { matchId } = req.params;
   const { status } = req.body;
+  // console.log("Received request to update status for matchId:", matchId);
+  // console.log("New status:", status);
 
   try {
-    const match = await Match.findById(id);
+    const match = await Match.findById(matchId);
+    // console.log("Fetched match:", match);
 
     if (
       !match ||
       (match.user1.toString() !== req.user.id &&
         match.user2.toString() !== req.user.id)
     ) {
+      // console.log("Match not found or access denied for user:", req.user.id);
       return res
         .status(404)
         .json({ message: "Match not found or access denied" });
@@ -103,11 +116,13 @@ exports.updateMatchStatus = async (req, res) => {
     // Update the status of the match
     match.status = status;
     await match.save();
+    // console.log("Match status updated to:", match.status);
 
     res
       .status(200)
       .json({ message: "Match status updated successfully", match });
   } catch (error) {
+    // console.error("Error updating match status:", error);
     res.status(500).json({ message: "Failed to update match status", error });
   }
 };

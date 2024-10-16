@@ -6,7 +6,7 @@ const authenticateToken = require("../middleware/authMiddleware");
 // Match Routes
 router.post("/", authenticateToken, matchController.createMatch); // Create new match
 router.get("/", authenticateToken, matchController.getUserMatches); // Get all matches
-router.get("/:id", authenticateToken, matchController.getMatchById); // Get specific match
-router.put("/:id", authenticateToken, matchController.updateMatchStatus); // Update match
+router.get("/:matchId", authenticateToken, matchController.getMatchById); // Get specific match
+router.put("/:matchId", authenticateToken, matchController.updateMatchStatus); // Update match
 
 module.exports = router;
