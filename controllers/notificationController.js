@@ -19,11 +19,11 @@ exports.getUserNotifications = async (req, res) => {
 
 // Mark a notification as read
 exports.markAsRead = async (req, res) => {
-  const { id } = req.params;
+  const { notificationId } = req.params;
 
   try {
     const notification = await Notification.findOneAndUpdate(
-      { _id: id, user: req.user.id },
+      { _id: notificationId, user: req.user.id },
       { isRead: true },
       { new: true }
     );
@@ -39,5 +39,26 @@ exports.markAsRead = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to mark notification as read", error });
+  }
+};
+
+// Create a new notification
+exports.createNotification = async (req, res) => {
+  const { userId, type, content } = req.body;
+
+  try {
+    const newNotification = await Notification.create({
+      user: userId,
+      type,
+      content,
+    });
+
+    await newNotification.save();
+    res.status(201).json({
+      message: "Successfully created new Notification",
+      data: newNotification,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to create notification", error });
   }
 };
