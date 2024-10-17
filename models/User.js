@@ -51,9 +51,17 @@ const UserSchema = new mongoose.Schema(
       default: "chatty", // Defines behavior style for AI users
     },
     availability: {
-      days: {
-        type: [String], // e.g., ["Monday", "Wednesday", "Friday"]
-        default: ["Monday", "Wednesday", "Friday"],
+      date: {
+        type: String, // Store date as a string in the format DD/MM/YYYY
+        validate: {
+          validator: function (v) {
+            // Regular expression to match DD/MM/YYYY format
+            return /^\d{2}\/\d{2}\/\d{4}$/.test(v);
+          },
+          message: (props) =>
+            `${props.value} is not a valid date format! Use DD/MM/YYYY.`,
+        },
+        required: [true, "Date is required"],
       },
       timeOfDay: {
         type: [String], // e.g., ["morning", "evening"]

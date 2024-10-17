@@ -12,6 +12,7 @@ const Message = require("./models/Message");
 const activityRoutes = require("./routes/activityRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const cors = require("cors");
 
 // Load environment variables
 dotenv.config();
@@ -30,6 +31,7 @@ const io = socketIo(server, {
 
 // Middleware to parse JSON requests
 app.use(express.json());
+app.use(cors());
 
 // Routes
 app.use("/api/users", userRoutes);
