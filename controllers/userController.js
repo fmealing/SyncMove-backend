@@ -117,3 +117,28 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ error: "Failed to delete user" });
   }
 };
+
+exports.updateUserProfilePicture = async (req, res) => {
+  const { profilePicture } = req.body;
+  const { id } = req.params;
+
+  // Validate the profile picture URL
+  if (!profilePicture) {
+    return res.status(400).json({ message: "Profile picture URL is required" });
+  }
+
+  try {
+    // Find the user and update the profile picture URL
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.profilePicture = profilePicture;
+    await user.save();
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to update profile picture", error });
+  }
+};

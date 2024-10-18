@@ -29,7 +29,10 @@ const uploadToGCS = (file) => {
       reject("No file provided");
     }
 
-    const blob = bucket.file(file.originalname);
+    // Create a unique filename using Date.now()
+    const uniqueFilename = `${Date.now()}-${file.originalname}`;
+
+    const blob = bucket.file(uniqueFilename);
     const blobStream = blob.createWriteStream({
       resumable: false,
     });
