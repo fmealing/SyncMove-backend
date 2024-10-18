@@ -61,7 +61,6 @@ const UserSchema = new mongoose.Schema(
           message: (props) =>
             `${props.value} is not a valid date format! Use DD/MM/YYYY.`,
         },
-        required: [true, "Date is required"],
       },
       timeOfDay: {
         type: [String], // e.g., ["morning", "evening"]

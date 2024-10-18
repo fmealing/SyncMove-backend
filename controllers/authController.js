@@ -43,6 +43,7 @@ exports.registerUser = async (req, res) => {
       experienceLevel,
       location,
     });
+    console.log(newUser);
 
     await newUser.save();
 
@@ -50,6 +51,7 @@ exports.registerUser = async (req, res) => {
     const token = jwt.sign({ id: newUser._id }, jwtSecret, { expiresIn: "1h" });
     res.status(201).json({ message: "User registered successfully", token });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "Failed to register user", error });
   }
 };

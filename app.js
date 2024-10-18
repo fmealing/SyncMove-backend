@@ -12,6 +12,7 @@ const Message = require("./models/Message");
 const activityRoutes = require("./routes/activityRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const imageRoutes = require("./routes/imageRoutes");
 const cors = require("cors");
 
 // Load environment variables
@@ -40,6 +41,7 @@ app.use("/api/activities", activityRoutes);
 app.use("/api/match", matchRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/images", imageRoutes);
 
 // Socket.IO configuration for real-time messaging
 io.use((socket, next) => {
