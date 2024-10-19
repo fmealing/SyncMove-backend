@@ -21,6 +21,10 @@ const UserSchema = new mongoose.Schema(
       default:
         "https://www.shutterstock.com/image-vector/avatar-photo-default-user-icon-600nw-2345549599.jpg",
     },
+    bio: {
+      type: String,
+      default: "Hello, I'm new to SyncMove!",
+    },
     activityType: {
       type: String,
       enum: ["running", "cycling", "weightlifting", "other"],

@@ -146,17 +146,10 @@ exports.updateUserProfilePicture = async (req, res) => {
 };
 
 // Handle suggested partners
-exports.getSuggestedPartners = async (req, res) => {
+exports.getSuggestedPartnersWithoutPagination = async (req, res) => {
   try {
-    // console.log("Request received for fetching suggested partners");
-
     const { location, preferences, includeAI } = req.body;
-    // console.log("Location: ", location);
-    // console.log("Preferences: ", preferences);
-    // console.log("Include AI: ", includeAI);
-
     const [lat, lon] = location;
-    // console.log("Latitude: ", lat, "Longitude: ", lon);
 
     // Call the AI matching API
     const response = await axios.post("http://127.0.0.1:5001/match", {
@@ -164,8 +157,6 @@ exports.getSuggestedPartners = async (req, res) => {
       preferences,
       includeAI,
     });
-
-    // console.log("AI Matching API Response: ", response.data);
 
     const matchedUsers = response.data.matches;
     if (!matchedUsers || matchedUsers.length === 0) {
@@ -177,19 +168,95 @@ exports.getSuggestedPartners = async (req, res) => {
       _id: { $in: matchedUsers.map((match) => match.user_id) },
     });
 
-    // console.log("Fetched User Details: ", userDetails);
+    // Create a map of userId to score from matchedUsers
+    const scoreMap = matchedUsers.reduce((acc, match) => {
+      acc[match.user_id] = match.score;
+      return acc;
+    }, {});
 
-    res.status(200).json(userDetails);
+    // Merge user details with their corresponding match score
+    const userWithScores = userDetails.map((user) => ({
+      ...user.toObject(),
+      matchScore: scoreMap[user._id],
+    }));
+
+    res.status(200).json(userWithScores);
   } catch (error) {
-    console.error("Error fetching suggested partners: ", error);
+    console.error(
+      "Error fetching suggested partners without pagination: ",
+      error
+    );
+    res.status(500).json({ error: "Failed to fetch suggested partners" });
+  }
+};
+
+exports.getSuggestedPartnersWithPagination = async (req, res) => {
+  try {
+    // Extract pagination parameters and default values
+    const { page = 1, limit = 6 } = req.query;
+    const { location, preferences, includeAI } = req.body;
+
+    console.log("Location received: ", location);
+    console.log("Preferences received: ", preferences);
+    console.log("Include AI received: ", includeAI);
+
+    const [lat, lon] = location;
+
+    // Call the AI matching API
+    const response = await axios.post("http://127.0.0.1:5001/match", {
+      location: [lat, lon],
+      preferences,
+      includeAI,
+    });
+
+    const matchedUsers = response.data.matches;
+    if (!matchedUsers || matchedUsers.length === 0) {
+      return res.status(404).json({ message: "No matches found" });
+    }
+
+    // Fetch user details from the User collection based on the match results
+    const userDetails = await User.find({
+      _id: { $in: matchedUsers.map((match) => match.user_id) },
+    });
+
+    // Create a map of userId to score from matchedUsers
+    const scoreMap = matchedUsers.reduce((acc, match) => {
+      acc[match.user_id] = match.score;
+      return acc;
+    }, {});
+
+    // Merge user details with their corresponding match score
+    const userWithScores = userDetails.map((user) => ({
+      ...user.toObject(),
+      matchScore: scoreMap[user._id],
+    }));
+
+    // Sort users by match score in descending order
+    userWithScores.sort((a, b) => b.matchScore - a.matchScore);
+
+    // Apply pagination after sorting
+    const startIndex = (page - 1) * limit;
+    const paginatedUsers = userWithScores.slice(startIndex, startIndex + limit);
+
+    // Total number of users for pagination
+    const totalUsers = userWithScores.length;
+
+    // Respond with paginated users and total number of users
+    res.status(200).json({
+      partners: paginatedUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      currentPage: Number(page),
+    });
+  } catch (error) {
+    console.error("Error fetching suggested partners with pagination: ", error);
     res.status(500).json({ error: "Failed to fetch suggested partners" });
   }
 };
 
 // Handle fetching pending partners
 exports.getPendingPartners = async (req, res) => {
-  console.log("Request received for fetching pending partners");
-  console.log("User from token: ", req.user);
+  // console.log("Request received for fetching pending partners");
+  // console.log("User from token: ", req.user);
 
   try {
     const { userId } = req.body;
@@ -198,6 +265,29 @@ exports.getPendingPartners = async (req, res) => {
     const pendingMatches = await Match.find({
       $or: [{ user1: userId }, { user2: userId }],
       status: "pending",
+    }).populate("user1 user2");
+
+    // Get the details of the other user in each pending match
+    const pendingPartners = pendingMatches.map((match) =>
+      match.user1._id.toString() === userId ? match.user2 : match.user1
+    );
+
+    res.json(pendingPartners);
+  } catch (error) {
+    console.error("Error fetching pending partners:", error);
+    res.status(500).json({ error: "Failed to fetch pending partners" });
+  }
+};
+
+// Handle fetching pending partners
+exports.getMatchedPartners = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Query matches where the status is pending and the user is involved
+    const pendingMatches = await Match.find({
+      $or: [{ user1: userId }, { user2: userId }],
+      status: "accepted",
     }).populate("user1 user2");
 
     // Get the details of the other user in each pending match

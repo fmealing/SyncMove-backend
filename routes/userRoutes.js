@@ -17,14 +17,25 @@ router.put(
 router.post(
   "/suggested-partners",
   authenticateToken,
-  userController.getSuggestedPartners
+  userController.getSuggestedPartnersWithoutPagination
 );
 
-console.log("testing callback fn", userController.getPendingPartners);
+router.post(
+  "/suggested-partners-pagination",
+  authenticateToken,
+  userController.getSuggestedPartnersWithPagination
+);
+
 router.post(
   "/pending-partners",
   authenticateToken,
   userController.getPendingPartners
+);
+
+router.post(
+  "/matched-partners",
+  authenticateToken,
+  userController.getMatchedPartners
 );
 
 module.exports = router;
