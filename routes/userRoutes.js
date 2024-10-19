@@ -9,6 +9,20 @@ router.get("/", authenticateToken, userController.getAllUsers);
 router.get("/:id", authenticateToken, userController.getUserById);
 router.put("/:id", authenticateToken, userController.updateUser);
 router.delete("/:id", authenticateToken, userController.deleteUser);
-router.put("/:id/profile-picture", userController.updateUserProfilePicture);
+router.put(
+  "/:id/profile-picture",
+  authenticateToken,
+  userController.updateUserProfilePicture
+);
+router.post(
+  "/suggested-partners",
+  authenticateToken,
+  userController.getSuggestedPartners
+);
+router.get(
+  "/pending-partners",
+  authenticateToken,
+  userController.getPendingPartners
+);
 
 module.exports = router;

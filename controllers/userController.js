@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
+const axios = require("axios");
 
 // Create a new user
 exports.createUser = async (req, res) => {
@@ -140,5 +141,69 @@ exports.updateUserProfilePicture = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to update profile picture", error });
+  }
+};
+
+// Handle suggested partners
+exports.getSuggestedPartners = async (req, res) => {
+  try {
+    console.log("Request received for fetching suggested partners");
+
+    const { location, preferences, includeAI } = req.body;
+    console.log("Location: ", location);
+    console.log("Preferences: ", preferences);
+    console.log("Include AI: ", includeAI);
+
+    const [lat, lon] = location;
+    console.log("Latitude: ", lat, "Longitude: ", lon);
+
+    // Call the AI matching API
+    const response = await axios.post("http://127.0.0.1:5001/match", {
+      location: [lat, lon],
+      preferences,
+      includeAI,
+    });
+
+    console.log("AI Matching API Response: ", response.data);
+
+    const matchedUsers = response.data.matches;
+    if (!matchedUsers || matchedUsers.length === 0) {
+      return res.status(404).json({ message: "No matches found" });
+    }
+
+    // Fetch user details from the User collection based on the match results
+    const userDetails = await User.find({
+      _id: { $in: matchedUsers.map((match) => match.user_id) },
+    });
+
+    console.log("Fetched User Details: ", userDetails);
+
+    res.status(200).json(userDetails);
+  } catch (error) {
+    console.error("Error fetching suggested partners: ", error);
+    res.status(500).json({ error: "Failed to fetch suggested partners" });
+  }
+};
+
+// Handle fetching pending partners
+exports.getPendingPartners = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Query matches where the status is pending and the user is involved
+    const pendingMatches = await Match.find({
+      $or: [{ user1: userId }, { user2: userId }],
+      status: "pending",
+    }).populate("user1 user2");
+
+    // Get the details of the other user in each pending match
+    const pendingPartners = pendingMatches.map((match) =>
+      match.user1._id.toString() === userId ? match.user2 : match.user1
+    );
+
+    res.json(pendingPartners);
+  } catch (error) {
+    console.error("Error fetching pending partners:", error);
+    res.status(500).json({ error: "Failed to fetch pending partners" });
   }
 };
