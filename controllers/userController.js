@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Match = require("../models/Match");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const axios = require("axios");
@@ -147,15 +148,15 @@ exports.updateUserProfilePicture = async (req, res) => {
 // Handle suggested partners
 exports.getSuggestedPartners = async (req, res) => {
   try {
-    console.log("Request received for fetching suggested partners");
+    // console.log("Request received for fetching suggested partners");
 
     const { location, preferences, includeAI } = req.body;
-    console.log("Location: ", location);
-    console.log("Preferences: ", preferences);
-    console.log("Include AI: ", includeAI);
+    // console.log("Location: ", location);
+    // console.log("Preferences: ", preferences);
+    // console.log("Include AI: ", includeAI);
 
     const [lat, lon] = location;
-    console.log("Latitude: ", lat, "Longitude: ", lon);
+    // console.log("Latitude: ", lat, "Longitude: ", lon);
 
     // Call the AI matching API
     const response = await axios.post("http://127.0.0.1:5001/match", {
@@ -164,7 +165,7 @@ exports.getSuggestedPartners = async (req, res) => {
       includeAI,
     });
 
-    console.log("AI Matching API Response: ", response.data);
+    // console.log("AI Matching API Response: ", response.data);
 
     const matchedUsers = response.data.matches;
     if (!matchedUsers || matchedUsers.length === 0) {
@@ -176,7 +177,7 @@ exports.getSuggestedPartners = async (req, res) => {
       _id: { $in: matchedUsers.map((match) => match.user_id) },
     });
 
-    console.log("Fetched User Details: ", userDetails);
+    // console.log("Fetched User Details: ", userDetails);
 
     res.status(200).json(userDetails);
   } catch (error) {
@@ -187,8 +188,11 @@ exports.getSuggestedPartners = async (req, res) => {
 
 // Handle fetching pending partners
 exports.getPendingPartners = async (req, res) => {
+  console.log("Request received for fetching pending partners");
+  console.log("User from token: ", req.user);
+
   try {
-    const userId = req.user.id;
+    const { userId } = req.body;
 
     // Query matches where the status is pending and the user is involved
     const pendingMatches = await Match.find({

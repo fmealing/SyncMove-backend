@@ -19,7 +19,9 @@ router.post(
   authenticateToken,
   userController.getSuggestedPartners
 );
-router.get(
+
+console.log("testing callback fn", userController.getPendingPartners);
+router.post(
   "/pending-partners",
   authenticateToken,
   userController.getPendingPartners
