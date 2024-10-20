@@ -3,6 +3,7 @@ const Match = require("../models/Match");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const axios = require("axios");
+const mongoose = require("mongoose");
 
 // Create a new user
 exports.createUser = async (req, res) => {
@@ -58,22 +59,37 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// Get a single user by ID - Only allow access to the user's own profile
+// Get a single user by ID
 exports.getUserById = async (req, res) => {
   try {
-    const userId = req.params.id;
+    let userId = req.params.id;
 
-    // Ensure the user can only access their own profile
-    if (req.user.id !== userId) {
-      return res.status(403).json({ error: "Access denied" });
+    // Log the incoming request
+    console.log("User ID from params: ", userId);
+
+    // Check for and remove any extra characters
+    userId = userId.replace(/[^\w\s]/gi, ""); // This removes non-alphanumeric characters
+
+    // Validate the length and structure of the ID
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      console.log("Invalid User ID format.");
+      return res.status(400).json({ error: "Invalid User ID format" });
     }
 
+    // Find the user in the database
     const user = await User.findById(userId);
+    console.log("User: ", user);
+
     if (!user) {
+      console.log("User not found in the database.");
       return res.status(404).json({ error: "User not found" });
     }
+
+    // Successfully found the user
     res.status(200).json(user);
   } catch (error) {
+    // Log the error
+    console.error("An error occurred while retrieving the user:", error);
     res.status(500).json({ error: "Failed to retrieve user" });
   }
 };
