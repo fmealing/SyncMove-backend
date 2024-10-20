@@ -31,8 +31,8 @@ const io = socketIo(server, {
 });
 
 // Middleware to parse JSON requests
+app.use(cors({ origin: "*" })); // TODO: Update this to only allow specific origins
 app.use(express.json());
-app.use(cors());
 
 // Routes
 app.use("/api/users", userRoutes);

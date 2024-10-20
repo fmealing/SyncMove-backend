@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from knn_utils import calculate_preference_similarity, get_user_features, haversine
 from pymongo import MongoClient
+from flask_cors import CORS
 
 # Load environment variables from .env file
 load_dotenv()
@@ -25,6 +26,7 @@ except Exception as e:
 
 # Initialize Flask application
 app = Flask(__name__)
+CORS(app)
 print("Flask application initialized")
 
 

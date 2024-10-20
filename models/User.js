@@ -32,7 +32,7 @@ const UserSchema = new mongoose.Schema(
     },
     fitnessGoals: {
       type: String,
-      enum: ["weight loss", "endurance", "muscle gain", "general fitness"],
+      enum: ["Weight Loss", "Endurance", "Muscle Gain", "General Fitness"],
     },
     experienceLevel: {
       type: Number,
