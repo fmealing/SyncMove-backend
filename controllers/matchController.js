@@ -33,11 +33,11 @@ exports.createMatch = async (req, res) => {
     });
 
     await newMatch.save();
-    res
+    return res
       .status(201)
       .json({ message: "Match created successfully", match: newMatch });
   } catch (error) {
-    res.status(500).json({ message: "Failed to create match", error });
+    return res.status(500).json({ message: "Failed to create match", error });
   }
 };
 
@@ -48,46 +48,45 @@ exports.getUserMatches = async (req, res) => {
   try {
     const matches = await Match.find({
       $or: [{ user1: userId }, { user2: userId }],
-    }).populate("user1 user2", "fullName profilePicture"); // Populate to include user details
+    }).populate("user1 user2", "fullName profilePicture");
 
-    res.status(200).json(matches);
+    if (!matches.length) {
+      return res.status(404).json({ message: "No matches found" });
+    }
+
+    return res.status(200).json(matches);
   } catch (error) {
-    res.status(500).json({ message: "Failed to retrieve matches", error });
+    return res
+      .status(500)
+      .json({ message: "Failed to retrieve matches", error });
   }
 };
 
 // Get a specific match by matchId
 exports.getMatchById = async (req, res) => {
   const { matchId } = req.params;
-  // console.log("Received matchId:", matchId);
 
   try {
-    // Attempt to find the match by matchId
     const match = await Match.findById(matchId).populate(
       "user1 user2",
       "fullName profilePicture"
     );
-    // console.log("Fetched match:", match);
 
-    // Check if the match exists and if the authenticated user is either user1 or user2
     if (!match) {
-      // console.log("Match not found");
       return res.status(404).json({ message: "Match not found" });
     }
 
+    // Check if the authenticated user is part of the match
     if (
       match.user1._id.toString() !== req.user.id &&
       match.user2._id.toString() !== req.user.id
     ) {
-      // console.log("Access denied for user:", req.user.id);
       return res.status(403).json({ message: "Access denied" });
     }
 
-    // If all checks pass, return the match data
-    res.status(200).json(match);
+    return res.status(200).json(match);
   } catch (error) {
-    // console.error("Error occurred while retrieving match:", error);
-    res.status(500).json({ message: "Failed to retrieve match", error });
+    return res.status(500).json({ message: "Failed to retrieve match", error });
   }
 };
 
@@ -95,19 +94,15 @@ exports.getMatchById = async (req, res) => {
 exports.updateMatchStatus = async (req, res) => {
   const { matchId } = req.params;
   const { status } = req.body;
-  // console.log("Received request to update status for matchId:", matchId);
-  // console.log("New status:", status);
 
   try {
     const match = await Match.findById(matchId);
-    // console.log("Fetched match:", match);
 
     if (
       !match ||
       (match.user1.toString() !== req.user.id &&
         match.user2.toString() !== req.user.id)
     ) {
-      // console.log("Match not found or access denied for user:", req.user.id);
       return res
         .status(404)
         .json({ message: "Match not found or access denied" });
@@ -116,13 +111,36 @@ exports.updateMatchStatus = async (req, res) => {
     // Update the status of the match
     match.status = status;
     await match.save();
-    // console.log("Match status updated to:", match.status);
 
-    res
+    return res
       .status(200)
       .json({ message: "Match status updated successfully", match });
   } catch (error) {
-    // console.error("Error updating match status:", error);
-    res.status(500).json({ message: "Failed to update match status", error });
+    return res
+      .status(500)
+      .json({ message: "Failed to update match status", error });
+  }
+};
+
+// Get all matches for a specific user (by userId, for admin or other users)
+exports.getMatchesForSpecificUser = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const matches = await Match.find({
+      $or: [{ user1: userId }, { user2: userId }],
+    }).populate("user1 user2", "fullName profilePicture");
+
+    if (!matches.length) {
+      return res
+        .status(404)
+        .json({ message: "No matches found for this user" });
+    }
+
+    return res.status(200).json(matches);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to retrieve matches", error });
   }
 };

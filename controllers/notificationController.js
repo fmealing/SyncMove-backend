@@ -2,12 +2,19 @@ const Notification = require("../models/Notification");
 
 // Get all notifications for authenticated user
 exports.getUserNotifications = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.id; // Use req.user.id to get the userId from the authenticated user
+
+  console.log("User ID: ", userId);
 
   try {
+    // Find all notifications where the "user" field matches the authenticated user's ID
     const notifications = await Notification.find({ user: userId }).sort({
-      createdAt: -1,
-    }); // Sort by newest first
+      createdAt: -1, // Sort by newest first
+    });
+
+    if (!notifications || notifications.length === 0) {
+      return res.status(404).json({ message: "No notifications found" });
+    }
 
     res.status(200).json({ data: notifications });
   } catch (error) {
@@ -45,6 +52,9 @@ exports.markAsRead = async (req, res) => {
 // Create a new notification
 exports.createNotification = async (req, res) => {
   const { userId, type, content } = req.body;
+  console.log("User ID: ", userId);
+  console.log("Type: ", type);
+  console.log("Content: ", content);
 
   try {
     const newNotification = await Notification.create({
@@ -53,6 +63,8 @@ exports.createNotification = async (req, res) => {
       content,
     });
 
+    console.log("New Notification: ", newNotification);
+
     await newNotification.save();
     res.status(201).json({
       message: "Successfully created new Notification",
@@ -60,5 +72,18 @@ exports.createNotification = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Failed to create notification", error });
+  }
+};
+
+// Get all notifications
+exports.getAllNotifications = async (req, res) => {
+  try {
+    const notifications = await Notification.find().sort({ createdAt: -1 });
+
+    res.status(200).json({ data: notifications });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to retrieve notifications", error });
   }
 };

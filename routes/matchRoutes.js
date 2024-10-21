@@ -8,5 +8,10 @@ router.post("/create", authenticateToken, matchController.createMatch); // Creat
 router.get("/", authenticateToken, matchController.getUserMatches); // Get all matches
 router.get("/:matchId", authenticateToken, matchController.getMatchById); // Get specific match
 router.put("/:matchId", authenticateToken, matchController.updateMatchStatus); // Update match
+router.get(
+  "/user/:userId",
+  authenticateToken,
+  matchController.getMatchesForSpecificUser
+); // Get all matches for a user
 
 module.exports = router;

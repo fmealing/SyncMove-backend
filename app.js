@@ -13,6 +13,8 @@ const activityRoutes = require("./routes/activityRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const imageRoutes = require("./routes/imageRoutes");
+const emailRoutes = require("./routes/emailRoutes");
+const conversationRoutes = require("./routes/conversationRoutes");
 const cors = require("cors");
 
 // Load environment variables
@@ -42,6 +44,8 @@ app.use("/api/match", matchRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/images", imageRoutes);
+app.use("/api/email", emailRoutes);
+app.use("/api/conversations", authenticateToken, conversationRoutes);
 
 // Socket.IO configuration for real-time messaging
 io.use((socket, next) => {
@@ -62,6 +66,12 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.user.id}`);
 
+  // Allow the user to join a room based on matchId
+  socket.on("joinRoom", (matchId) => {
+    socket.join(matchId);
+    console.log(`User ${socket.user.id} joined room ${matchId}`);
+  });
+
   // Handle message sending
   socket.on("sendMessage", async ({ matchId, receiverId, content }) => {
     try {
@@ -72,14 +82,14 @@ io.on("connection", (socket) => {
         content,
       });
 
-      // Emit the message to both the sender and receiver
-      io.to(receiverId).emit("receiveMessage", message);
-      socket.emit("receiveMessage", message);
+      // Emit the message to both the sender and receiver via room
+      io.to(matchId).emit("receiveMessage", message);
     } catch (error) {
       console.error("Error saving message:", error);
     }
   });
 
+  // Handle user disconnection
   socket.on("disconnect", () => {
     console.log(`User disconnected: ${socket.user.id}`);
   });
