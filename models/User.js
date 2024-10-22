@@ -25,6 +25,16 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "Hello, I'm new to SyncMove!",
     },
+    dob: {
+      type: String, // Storing as a string
+      validate: {
+        validator: function (v) {
+          // Regular expression to match various date formats (e.g., YYYY-MM-DD, DD/MM/YYYY)
+          return /^\d{2}\/\d{2}\/\d{4}$|^\d{4}-\d{2}-\d{2}$/.test(v);
+        },
+        message: (props) => `${props.value} is not a valid date format!`,
+      },
+    },
     activityType: {
       type: String,
       enum: ["running", "cycling", "weightlifting", "other"],

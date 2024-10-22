@@ -13,11 +13,15 @@ exports.createUser = async (req, res) => {
       password,
       fullName,
       profilePicture,
+      dob,
       activityType,
       fitnessGoals,
       experienceLevel,
       location,
     } = req.body;
+
+    // Log the received dob
+    console.log("Received DOB:", dob);
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -26,14 +30,15 @@ exports.createUser = async (req, res) => {
     }
 
     // Hash the password
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create a new user document with the hashed password
+    // Create a new user document
     const newUser = new User({
       email,
       password: hashedPassword,
       fullName,
       profilePicture,
+      dob,
       activityType,
       fitnessGoals,
       experienceLevel,
@@ -45,6 +50,7 @@ exports.createUser = async (req, res) => {
       .status(201)
       .json({ message: "User created successfully", user: newUser });
   } catch (error) {
+    console.error("Failed to create user:", error);
     res.status(500).json({ error: "Failed to create user" });
   }
 };
