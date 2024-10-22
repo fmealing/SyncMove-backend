@@ -31,7 +31,7 @@ const ActivitySchema = new mongoose.Schema(
     },
     timeOfDay: {
       type: String,
-      enum: ["Morning", "Afternoon", "Evening"],
+      enum: ["morning", "afternoon", "evening"],
       required: true,
     },
     createdAt: {

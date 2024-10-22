@@ -8,6 +8,11 @@ const NotificationSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    sender: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     type: {
       type: String,
       enum: ["match_request", "message", "activity_invite"],
