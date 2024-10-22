@@ -2,12 +2,13 @@ const mongoose = require("mongoose");
 
 const ActivitySchema = new mongoose.Schema(
   {
-    creator: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true, // Index for fast lookup by creator
-    },
+    participants: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true, // Now we require at least two participants
+      },
+    ],
     activityType: {
       type: String,
       required: true,
@@ -23,12 +24,6 @@ const ActivitySchema = new mongoose.Schema(
         index: "2dsphere", // Geospatial index for location-based queries
       },
     },
-    participants: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
     dateString: {
       type: String,
       required: true,
@@ -47,7 +42,7 @@ const ActivitySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Optional TTL index to automatically delete past activities (set to 7 days here)
+// Optional TTL index to automatically delete past activities (7 days)
 ActivitySchema.index({ createdAt: 1 }, { expireAfterSeconds: 604800 });
 
 module.exports = mongoose.model("Activity", ActivitySchema);

@@ -51,19 +51,15 @@ exports.markAsRead = async (req, res) => {
 
 // Create a new notification
 exports.createNotification = async (req, res) => {
-  const { userId, type, content } = req.body;
-  console.log("User ID: ", userId);
-  console.log("Type: ", type);
-  console.log("Content: ", content);
+  const { userId, senderId, type, content } = req.body;
 
   try {
     const newNotification = await Notification.create({
-      user: userId,
+      user: userId, // The recipient of the notification
+      sender: senderId, // The sender of the notification
       type,
       content,
     });
-
-    console.log("New Notification: ", newNotification);
 
     await newNotification.save();
     res.status(201).json({
