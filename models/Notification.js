@@ -1,3 +1,6 @@
+// TODO: Add a field for matchId. Otherwise, the user can't accept the match_request
+// Add the matchId field to the notificationController.js file
+
 const mongoose = require("mongoose");
 
 const NotificationSchema = new mongoose.Schema(
@@ -13,9 +16,13 @@ const NotificationSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    matchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Match",
+    },
     type: {
       type: String,
-      enum: ["match_request", "message", "activity_invite"],
+      enum: ["match_request", "message", "activity_invite", "declined"],
     },
     content: {
       type: String,

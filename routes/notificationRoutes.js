@@ -4,8 +4,7 @@ const notificationController = require("../controllers/notificationController");
 const authenticateToken = require("../middleware/authMiddleware");
 
 // Notification Routes
-router.get("/", authenticateToken, notificationController.getUserNotifications);
-
+router.get("/", authenticateToken, notificationController.getUserNotifications); // Get all notifications for authenticated user
 router.put(
   "/:notificationId/read",
   authenticateToken,
@@ -13,6 +12,14 @@ router.put(
 ); // Mark notification as read
 router.post("/", authenticateToken, notificationController.createNotification); // Create a new notification
 
-router.get("/all", notificationController.getAllNotifications);
+// Route for deleting a notification by ID
+router.delete(
+  "/:notificationId",
+  authenticateToken,
+  notificationController.deleteNotification
+); // Delete a notification by ID
+
+// Admin route to get all notifications
+router.get("/all", notificationController.getAllNotifications); // Get all notifications for admin
 
 module.exports = router;

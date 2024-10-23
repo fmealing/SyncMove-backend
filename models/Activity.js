@@ -16,13 +16,10 @@ const ActivitySchema = new mongoose.Schema(
     description: {
       type: String,
     },
+    // ✅ This needs to be a string with the default value "Unknown"
     location: {
-      type: { type: String, default: "Point" },
-      coordinates: {
-        type: [Number],
-        required: true,
-        index: "2dsphere", // Geospatial index for location-based queries
-      },
+      type: String,
+      default: "Unknown",
     },
     dateString: {
       type: String,
