@@ -21,6 +21,11 @@ const ActivitySchema = new mongoose.Schema(
       type: String,
       default: "Unknown",
     },
+    status: {
+      type: String,
+      enum: ["pending", "completed", "cancelled"],
+      default: "pending",
+    },
     dateString: {
       type: String,
       required: true,

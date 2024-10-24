@@ -218,10 +218,6 @@ exports.getSuggestedPartnersWithPagination = async (req, res) => {
     const { page = 1, limit = 6 } = req.query;
     const { location, preferences, includeAI } = req.body;
 
-    console.log("Location received: ", location);
-    console.log("Preferences received: ", preferences);
-    console.log("Include AI received: ", includeAI);
-
     const [lat, lon] = location;
 
     // Call the AI matching API

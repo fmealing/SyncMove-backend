@@ -12,14 +12,6 @@ exports.createActivity = async (req, res) => {
     participants,
   } = req.body;
 
-  console.log("This is for debugging purposes");
-  console.log("Activity Type: ", activityType);
-  console.log("Description: ", description);
-  console.log("Location: ", location);
-  console.log("Date String: ", dateString);
-  console.log("Time of Day: ", timeOfDay);
-  console.log("Participants: ", participants);
-
   try {
     // Ensure that a valid match exists between the participants
     const match = await Match.findOne({
@@ -73,20 +65,20 @@ exports.getAllActivities = async (req, res) => {
   }
 };
 
-// Get a specific activity by ID
-exports.getActivityById = async (req, res) => {
-  const { id } = req.params;
+// Get all activities for a user by userId
+exports.getActivitiesByUserId = async (req, res) => {
+  const { id } = req.params; // Assuming user ID is passed in the URL params
 
   try {
-    const activity = await Activity.findById(id);
-    if (!activity || activity.creator.toString() !== req.user.id) {
+    const activities = await Activity.find({ participants: id }); // Fetch all activities where the user is a participant
+    if (!activities || activities.length === 0) {
       return res
         .status(404)
-        .json({ message: "Activity not found or access denied" });
+        .json({ message: "No activities found for this user" });
     }
-    res.status(200).json(activity);
+    res.status(200).json({ activities });
   } catch (error) {
-    res.status(500).json({ message: "Failed to get activity", error });
+    res.status(500).json({ message: "Failed to fetch activities", error });
   }
 };
 
@@ -97,7 +89,7 @@ exports.updateActivity = async (req, res) => {
 
   try {
     const activity = await Activity.findOneAndUpdate(
-      { _id: id, creator: req.user.id },
+      { _id: id, creator: req.user.id }, // Ensure the user is the creator
       updates,
       { new: true }
     );

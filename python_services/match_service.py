@@ -1,21 +1,29 @@
+# TODO: Make this better
+# Some issues I have
+# 1. The algorithm is not very good. Only depends on activity, goal, experience and location
+#  - a lot of the values look really close together
+# 2. The value needs to be expressed as a percentage (of closely the users match)
+# 3. I need to find a good way to test this other than unit tests
+# The user contains the following fields than can be used to match
+# - Date of birth
+# - Availability (time of day - either morning, afternoon, evening)
+
 import os
 
 import numpy as np
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from knn_utils import calculate_preference_similarity, get_user_features, haversine
 from pymongo import MongoClient
-from flask_cors import CORS
 
 # Load environment variables from .env file
 load_dotenv()
 mongo_uri = os.getenv("MONGO_DB_URI")
-print("MongoDB URI:", mongo_uri)
 
 # Connect to MongoDB
 client = MongoClient(mongo_uri)
 db = client["test"]
-print("Connected to MongoDB")
 
 try:
     client.admin.command("ping")
@@ -27,87 +35,74 @@ except Exception as e:
 # Initialize Flask application
 app = Flask(__name__)
 CORS(app)
-print("Flask application initialized")
 
 
-# Modify the match function inside the Flask app
+# Flask route to handle match requests
 @app.route("/match", methods=["POST"])
 def match():
-    print("Received match request")
     try:
+        # Extract request data
         req_data = request.get_json()
-        lat, lon = req_data["location"]
-        print(f"Location: {lat}, {lon}")
 
-        if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+        # Extract location and preferences from request data
+        lat, lon = req_data["location"]
+        preferences = req_data["preferences"]
+
+        # Check that preferences array contains exactly 4 elements
+        if len(preferences) != 4:
             return (
                 jsonify(
                     {
-                        "error": "Latitude must be between -90 and 90 and Longitude must be between -180 and 180"
+                        "error": "Preferences array must contain 4 elements (activityType, fitnessGoal, experienceLevel, age)"
                     }
                 ),
                 400,
             )
 
-        preferences = req_data["preferences"]
-        activity_map = {"running": 1, "cycling": 2, "weightlifting": 3, "other": 4}
-        goals_map = {
-            "weight loss": 1,
-            "endurance": 2,
-            "muscle gain": 3,
-            "general fitness": 4,
-        }
+        # Unpack the preferences array
+        activity_type, fitness_goal, experience_level, age = preferences
 
-        user_preferences_numeric = [
-            activity_map.get(preferences[0], 0),
-            goals_map.get(preferences[1], 0),
-            preferences[2],  # Experience level is already numeric
-        ]
-
+        # Fetch user features from the database
         include_ai = req_data.get("includeAI", False)
-
         feature_matrix, user_ids = get_user_features(db, include_ai)
 
-        # Define the maximum distance for normalization
-        MAX_DISTANCE = 100  # e.g., 100 km, adjust based on your use case
-
+        MAX_DISTANCE = 100  # Define the maximum distance for normalization (100 km)
         combined_scores = []
+
         for user_features, user_id in zip(feature_matrix, user_ids):
             user_lat, user_lon = user_features[-2], user_features[-1]
             other_preferences = user_features[:-2]
 
-            # Normalize the geographical distance
+            # Normalize geographical distance
             geo_distance = haversine(lat, lon, user_lat, user_lon) / MAX_DISTANCE
-            geo_distance = min(geo_distance, 1)  # Ensure the max is 1
+            geo_distance = min(geo_distance, 1)
 
-            # Get preference similarity (already normalized to 0 to 1)
+            # Calculate preference similarity between users
             preference_similarity = calculate_preference_similarity(
-                user_preferences_numeric, other_preferences
+                [activity_type, fitness_goal, experience_level, age], other_preferences
             )
 
-            # Weights should sum to 1 for a percentage-based score
+            # Weights for combining geographical and preference similarity
             geo_weight = 0.6
             pref_weight = 0.4
 
-            # Combined score now normalized between 0 and 1
+            # Final combined score (normalized between 0 and 1)
             combined_score = (geo_weight * (1 - geo_distance)) + (
                 pref_weight * preference_similarity
             )
+            combined_percentage = round(combined_score * 100, 1)
 
-            print(
-                f"User ID: {user_id}, Geo Distance (normalized): {geo_distance}, Preference Similarity: {preference_similarity}, Combined Score: {combined_score}"
-            )
+            combined_scores.append((combined_percentage, user_id))
 
-            combined_scores.append((combined_score, user_id))
-
+        # Sort matches by score in descending order and return top matches
         combined_scores.sort(reverse=True)
         matches = [
             {"user_id": user_id, "score": score}
             for score, user_id in combined_scores[:3]
         ]
-        print("Matches:", matches)
 
         return jsonify({"matches": matches})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import numpy as np
 
 
@@ -26,23 +28,17 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * c  # Return distance in kilometers
 
 
+from datetime import datetime
+
+
 def get_user_features(db, include_ai=False):
     """
-    Fetch user feature data from MongoDB for KNN processing, with an option to include AI users.
-
-    Parameters:
-    - db: MongoDB database connection object.
-    - include_ai: Boolean flag to include AI users in the query results.
-
-    Returns:
-    - feature_matrix: NumPy array of user feature vectors for matching.
-    - user_ids: List of user IDs corresponding to each feature vector.
+    Fetch user feature data from MongoDB for KNN processing, including the user's age.
     """
     users_collection = db["users"]
 
     # Define the query to filter out AI users if needed
     query = {} if include_ai else {"isAIUser": False}
-    print("Query to MongoDB:", query)
 
     # Fetch user data
     user_data = list(
@@ -54,10 +50,10 @@ def get_user_features(db, include_ai=False):
                 "location.coordinates": 1,
                 "activityType": 1,
                 "fitnessGoals": 1,
+                "dob": 1,  # Fetching date of birth (dob)
             },
         )
     )
-    print("Fetched user data (full):", user_data)
 
     # Map categorical fields to numerical values
     activity_map = {"running": 1, "cycling": 2, "weightlifting": 3, "other": 4}
@@ -68,7 +64,6 @@ def get_user_features(db, include_ai=False):
         "general fitness": 4,
     }
 
-    # Prepare feature matrix using activity type, fitness goals, experience level, and coordinates
     feature_matrix = []
     for user in user_data:
         activity_type = activity_map.get(user["activityType"], 0)
@@ -76,45 +71,44 @@ def get_user_features(db, include_ai=False):
         experience_level = user.get("experienceLevel", 0)
         coordinates = user["location"]["coordinates"]
 
-        print(f"User Activity Type: {user['activityType']}, Mapped: {activity_type}")
-        print(f"User Fitness Goal: {user['fitnessGoals']}, Mapped: {fitness_goal}")
+        # Calculate age from date of birth (dob)
+        dob = user.get("dob")
+        if dob:
+            birth_date = datetime.strptime(dob, "%Y-%m-%d")
+            age = (datetime.now() - birth_date).days // 365
+        else:
+            age = 0  # Default to 0 if dob is missing
 
-        # Construct the feature vector for each user
-        feature_vector = [activity_type, fitness_goal, experience_level] + coordinates
+        # Create feature vector including age
+        feature_vector = [
+            activity_type,
+            fitness_goal,
+            experience_level,
+            age,
+        ] + coordinates
         feature_matrix.append(feature_vector)
 
     # Convert to a NumPy array for compatibility
     feature_matrix = np.array(feature_matrix)
-    print("Feature matrix shape:", feature_matrix.shape)
-    print("Feature matrix:", feature_matrix)
     user_ids = [str(user["_id"]) for user in user_data]
-    print("User IDs:", user_ids)
 
     return feature_matrix, user_ids
 
 
 def calculate_preference_similarity(user_preferences, other_preferences, weights=None):
     """
-    Calculate similarity between two users' preferences, using weighted scoring.
-
-    Parameters:
-    - user_preferences: List of the user's preferences for activity type, fitness goals, and experience level.
-    - other_preferences: List of another user's preferences for matching.
-    - weights: Optional dictionary with weights for each preference type.
-
-    Returns:
-    - Normalized similarity score (0 to 1) representing preference similarity.
+    Calculate similarity between two users' preferences, using weighted scoring, including age similarity.
     """
-    print(f"User Preferences in calculate_preference_similarity: {user_preferences}")
-    print(
-        f"Other User Preferences in calculate_preference_similarity: {other_preferences}"
-    )
-
     if weights is None:
-        weights = {"activityType": 0.4, "fitnessGoals": 0.3, "experienceLevel": 0.3}
+        weights = {
+            "activityType": 0.3,
+            "fitnessGoals": 0.2,
+            "experienceLevel": 0.2,
+            "age": 0.3,  # Adding age as a weighted factor
+        }
 
-    user_activity, user_goal, user_experience = user_preferences
-    other_activity, other_goal, other_experience = other_preferences
+    user_activity, user_goal, user_experience, user_age = user_preferences
+    other_activity, other_goal, other_experience, other_age = other_preferences
 
     score = 0
     total_weight = sum(weights.values())
@@ -131,5 +125,15 @@ def calculate_preference_similarity(user_preferences, other_preferences, weights
         score += weights["experienceLevel"]
     elif experience_diff == 1:
         score += weights["experienceLevel"] * 0.5
+
+    # Calculate similarity based on age (difference in age)
+    age_diff = abs(user_age - other_age)
+    if age_diff <= 3:  # Small age difference means higher similarity
+        score += weights["age"]
+    elif age_diff <= 5:
+        score += weights["age"] * 0.7
+    elif age_diff <= 10:
+        score += weights["age"] * 0.5
+    # Larger age differences lower the score; no score for differences > 10 years
 
     return score / total_weight  # Normalized score between 0 and 1
